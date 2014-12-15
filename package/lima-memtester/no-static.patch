@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fbc470b..1523d26 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
+ 
+ project(lima-memtester ASM C)
+ find_package(Threads REQUIRED)
+-set(CMAKE_C_FLAGS "-s -static -Os")
++set(CMAKE_C_FLAGS "-Os")
+ 
+ add_definitions(-DHAVE_NO_LIBMALI_BLOB -DMESA_EGL_NO_X11_HEADERS)
+ include_directories(limadriver/include limadriver/limare/lib

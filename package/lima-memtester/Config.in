@@ -1,0 +1,7 @@
+config BR2_PACKAGE_LIMA_MEMTESTER
+	bool "lima-memtester"
+	help
+	  This is a memory reliability testing tool, implemented by combining
+	  http://limadriver.org/ and http://pyropus.ca/software/memtester/
+
+	  https://github.com/ssvb/lima-memtester
