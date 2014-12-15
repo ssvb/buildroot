@@ -1,0 +1,9 @@
+config BR2_PACKAGE_A10_DRAM_TOOLS
+	bool "a10-dram-tools"
+	depends on BR2_PACKAGE_LIMA_MEMTESTER
+	depends on BR2_PACKAGE_RUBY
+	help
+	  This is a set of tools, which can assist in configuring the Allwinner
+	  A10/A13/A20 DRAM controller.
+
+	  https://github.com/ssvb/a10-dram-tools
