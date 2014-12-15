@@ -1,0 +1,9 @@
+config BR2_PACKAGE_SUNXI_BOOTSETUP
+	bool "sunxi-bootsetup"
+	depends on BR2_PACKAGE_A10_DRAM_TOOLS
+	depends on BR2_PACKAGE_RUBY
+	help
+	  A set of scripts to provide installer initramfs for
+	  Allwinner hardware.
+
+	  https://github.com/ssvb/sunxi-bootsetup
