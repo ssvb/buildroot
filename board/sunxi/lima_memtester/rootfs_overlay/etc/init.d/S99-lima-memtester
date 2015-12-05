@@ -1,0 +1,110 @@
+#!/usr/bin/env ruby
+#
+# Copyright © 2014 Siarhei Siamashka <siarhei.siamashka@gmail.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+###############################################################################
+# LEDs handling
+###############################################################################
+
+def leds_get_list()
+  tmp = []
+  Dir.entries('/sys/class/leds/').each {|entry|
+    fullpath = File.join('/sys/class/leds', entry)
+    next if entry == "." || entry == ".."
+    next unless File.directory?(fullpath)
+    tmp.push(fullpath)
+  }
+  return tmp
+end
+
+def leds_find_trigger(leds, trigger)
+  leds.select {|led| File.read(File.join(led, "trigger")) =~ /\[#{trigger}\]/ }
+end
+
+def leds_set_brightness(leds, brightness)
+  leds.each {|led|
+    max_brightness = File.read(File.join(led, "max_brightness"))
+    if brightness > 0
+      File.write(File.join(led, "brightness"), "#{max_brightness}")
+    else
+      File.write(File.join(led, "brightness"), "0")
+    end
+  }
+end
+
+def leds_set_trigger(leds, trigger)
+  leds.each {|led| File.write(File.join(led, "trigger"), "#{trigger}") }
+end
+
+def leds_set_timer(leds, delay_on, delay_off)
+  leds.each {|led|
+    if File.read(File.join(led, "trigger")) =~ /timer/
+      File.write(File.join(led, "trigger"), "timer")
+      File.write(File.join(led, "delay_on"), "#{delay_on}")
+      File.write(File.join(led, "delay_off"), "#{delay_off}")
+    end
+  }
+end
+
+$all_leds = leds_get_list()
+$heartbeat_leds = leds_find_trigger($all_leds, "heartbeat")
+if $heartbeat_leds.size == 0 && $all_leds.size > 0
+  leds_set_trigger($all_leds.slice(0, 1), "heartbeat")
+  $heartbeat_leds = leds_find_trigger($all_leds, "heartbeat")
+end
+$other_leds = $all_leds.select {|led| !$heartbeat_leds.include?(led) }
+leds_set_trigger($other_leds, "none")
+leds_set_brightness($other_leds, 0)
+
+###############################################################################
+# lima-memtester
+###############################################################################
+
+def report_start()
+  leds_set_timer($heartbeat_leds, 70, 450)
+end
+
+def report_short_test_success()
+  leds_set_timer($heartbeat_leds, 260, 260)
+end
+
+def report_longer_test_success()
+  leds_set_timer($heartbeat_leds, 450, 70)
+  leds_set_brightness($other_leds, 1)
+end
+
+def report_failure()
+  leds_set_brightness($all_leds, 0)
+end
+
+$serial = "/dev/null"
+$serial = "/dev/ttyS0" if File.exists?("/dev/ttyS0")
+
+report_start()
+
+# First run a short test
+if system("MEMTESTER_EARLY_EXIT=1 lima-memtester 50M 2 > #{$serial}")
+  report_short_test_success()
+  # Then run a bit longer test
+  if system("MEMTESTER_EARLY_EXIT=1 lima-memtester 50M 8 > #{$serial}")
+    report_longer_test_success()
+    # Then run until a failure is detected or the user terminates us
+    system("MEMTESTER_EARLY_EXIT=1 lima-memtester 50M > #{$serial}")
+  end
+end
+
+report_failure()
